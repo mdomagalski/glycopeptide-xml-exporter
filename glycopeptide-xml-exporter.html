@@ -1,0 +1,95 @@
+<!-- Imports polymer -->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-fab/paper-fab.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+
+<!-- Defines element markup -->
+<dom-module id="glycopeptide-xml-exporter">
+    <style>
+        paper-fab {
+            --paper-fab-background: var(--paper-green-500);
+            --paper-fab-keyboard-focus-background: var(--paper-green-900);
+        }
+    </style>
+    <template>
+        <a id="download" on-click="jsonToSsXml">
+            <paper-fab icon="file-download"></paper-fab>
+        </a>
+    </template>
+
+    <!-- Registers custom element -->
+    <script>
+    Polymer({
+        is: 'glycopeptide-xml-exporter',
+        properties: {
+            filename: String,
+            json: {
+                type: Array,
+                value: {}
+            },
+            xml:{
+                type: String,
+                value:'<?xml version="1.0"?>\n ' +
+                '<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
+            }
+        },
+        download: function () {
+            var button = this.$.download;
+            var file = new Blob([this.xml], {type: 'xml'});
+            button.href = URL.createObjectURL(file);
+            button.download = this.filename;
+        },
+        jsonToSsXml: function () {
+            var data = typeof this.json != "object"
+                ? JSON.parse(this.json)
+                : this.json;
+            for(var item in this.json){
+                this.newWorksheet(this.json[item].mass, this.json[item].data)
+            }
+
+            this.xml += '</ss:Workbook>\n';
+            this.download();
+        },
+        newWorksheet: function (mass, data) {
+            var table = {};
+            for(item in data.map){
+                row = data.map[item].peptide;
+                column = data.map[item].glycan;
+                if(!table[row]){
+                    table[row]={};
+                }
+                table[row][column]=data.map[item].value+' ('+data.map[item].mass+' Da)';
+            }
+
+            this.xml += '<ss:Worksheet ss:Name="'+mass+'">\n<ss:Table>\n\n';
+            this.xml += '<ss:Row>\n   <ss:Cell></ss:Cell>\n';
+            for (item in data.glycans){
+                this.xml += '  <ss:Cell>\n';
+                this.xml += '    <ss:Data ss:Type="String">'+data.glycans[item]+'</ss:Data>\n';
+                this.xml += '  </ss:Cell>\n';
+            }
+            this.xml += '</ss:Row>\n';
+            for (row=1; row<data.peptides.length; row++){
+                this.xml += '<ss:Row>\n';
+                this.xml += '   <ss:Cell>\n';
+                this.xml += '       <ss:Data ss:Type="String">'+data.peptides[row]+'</ss:Data>\n';
+                this.xml += '   </ss:Cell>\n';
+                for (column=1; column<data.glycans.length; column++){
+                    this.xml += '   <ss:Cell>\n';
+                    this.xml += '       <ss:Data ss:Type="String">';
+                    if (table[row]){
+                        if (table[row][column]){
+                            this.xml += table[row][column];
+                        }
+                    }
+                    this.xml += '</ss:Data>';
+                    this.xml += '   </ss:Cell>\n';
+                }
+                this.xml += '</ss:Row>\n';
+            }
+
+            this.xml += '</ss:Table>\n</ss:Worksheet>\n'
+        }
+    });
+    </script>
+</dom-module>
