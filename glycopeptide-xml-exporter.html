@@ -9,11 +9,20 @@
         paper-fab {
             --paper-fab-background: var(--paper-green-500);
             --paper-fab-keyboard-focus-background: var(--paper-green-900);
+            display: block;
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
         }
+
+        paper-fab[disabled] {
+            display: none;
+        }
+
     </style>
     <template>
-        <a id="download" on-click="jsonToSsXml">
-            <paper-fab icon="file-download"></paper-fab>
+        <a id="download" on-click="download">
+            <paper-fab mini icon="file-download" disabled></paper-fab>
         </a>
     </template>
 
@@ -24,31 +33,40 @@
         properties: {
             filename: String,
             json: {
-                type: Array,
-                value: {}
+                type: Object,
+                observer: '_button'
             },
-            xml:{
-                type: String,
-                value:'<?xml version="1.0"?>\n ' +
-                '<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
+            xml: String
+        },
+        attached: function(){
+            if (!Date.now) {
+                Date.now = function() { return new Date().getTime(); }
+            }
+            if(!this.filename){
+                this.filename = "glycopeptide-search-results-"+Date.now()+".xml";
             }
         },
+        _button: function(value){
+            this.$.download.querySelector('paper-fab').disabled=false;
+        },
         download: function () {
+            this.JsonToXml();
             var button = this.$.download;
             var file = new Blob([this.xml], {type: 'xml'});
             button.href = URL.createObjectURL(file);
             button.download = this.filename;
         },
-        jsonToSsXml: function () {
+        JsonToXml: function () {
             var data = typeof this.json != "object"
                 ? JSON.parse(this.json)
                 : this.json;
+            this.xml = '<?xml version="1.0"?>\n ' +
+                '<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
             for(var item in this.json){
-                this.newWorksheet(this.json[item].mass, this.json[item].data)
+                this.newWorksheet(item, this.json[item])
             }
 
             this.xml += '</ss:Workbook>\n';
-            this.download();
         },
         newWorksheet: function (mass, data) {
             var table = {};
@@ -62,6 +80,11 @@
             }
 
             this.xml += '<ss:Worksheet ss:Name="'+mass+'">\n<ss:Table>\n\n';
+            if (Object.keys(table).length===0){
+                this.xml += '<ss:Row>\n   <ss:Cell>'
+                this.xml += '    <ss:Data ss:Type="String">Nothing found</ss:Data>\n';
+                this.xml += '</ss:Cell>\n</ss:Row>';
+            }
             this.xml += '<ss:Row>\n   <ss:Cell></ss:Cell>\n';
             for (item in data.glycans){
                 this.xml += '  <ss:Cell>\n';
@@ -69,17 +92,17 @@
                 this.xml += '  </ss:Cell>\n';
             }
             this.xml += '</ss:Row>\n';
-            for (row=1; row<data.peptides.length; row++){
+            for (row=0; row<data.peptides.length; row++){
                 this.xml += '<ss:Row>\n';
                 this.xml += '   <ss:Cell>\n';
                 this.xml += '       <ss:Data ss:Type="String">'+data.peptides[row]+'</ss:Data>\n';
                 this.xml += '   </ss:Cell>\n';
-                for (column=1; column<data.glycans.length; column++){
+                for (column=0; column<data.glycans.length; column++){
                     this.xml += '   <ss:Cell>\n';
                     this.xml += '       <ss:Data ss:Type="String">';
-                    if (table[row]){
-                        if (table[row][column]){
-                            this.xml += table[row][column];
+                    if (table[row+1]){
+                        if (table[row+1][column+1]){
+                            this.xml += table[row+1][column+1];
                         }
                     }
                     this.xml += '</ss:Data>';
