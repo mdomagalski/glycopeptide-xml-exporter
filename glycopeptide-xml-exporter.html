@@ -43,7 +43,7 @@
         },
         download: function () {
             if(!this.filename){
-                timestamp = new Date().getTime();
+                timestamp = new Date().now();
                 this.filename = "glycopeptide-search-results-"+timestamp+".xml";
             }
             this.JsonToXml();
