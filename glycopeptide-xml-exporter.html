@@ -38,18 +38,14 @@
             },
             xml: String
         },
-        attached: function(){
-            if (!Date.now) {
-                Date.now = function() { return new Date().getTime(); }
-            }
-            if(!this.filename){
-                this.filename = "glycopeptide-search-results-"+Date.now()+".xml";
-            }
-        },
         _button: function(value){
             this.$.download.querySelector('paper-fab').disabled=false;
         },
         download: function () {
+            if(!this.filename){
+                timestamp = new Date().getTime();
+                this.filename = "glycopeptide-search-results-"+timestamp+".xml";
+            }
             this.JsonToXml();
             var button = this.$.download;
             var file = new Blob([this.xml], {type: 'xml'});
