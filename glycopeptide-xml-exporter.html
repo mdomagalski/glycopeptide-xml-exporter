@@ -68,7 +68,7 @@
             this.xml = '<?xml version="1.0"?>\n ' +
                 '<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
             for(var item in this.json){
-                this.newWorksheet(item, this.json[item].data)
+                this.newWorksheet(item, this.json[item])
             }
 
             this.xml += '</ss:Workbook>\n';
